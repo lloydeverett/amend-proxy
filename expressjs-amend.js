@@ -10,32 +10,11 @@ for (const key in process.env) {
     env_keys.push(key);
 }
 
-env_keys.sort((a, b) => {
-    const key_match = (key) => {
-        const sort_regex = /^AMEND_(.*)_([0-9]+)$/;
-        const match = key.match(sort_regex);
-        if (!match) {
-            console.error(`environment variable '${key}' does not match 'AMEND_.*_[0-9]+'`);
-            process.exit(1);
-        }
-        return match
-    };
-
-    const a_match = key_match(a);
-    const a_prefix = a.match[0];
-    const a_suffix = new Number(a.match[1]);
-
-    const b_match = key_match(b);
-    const b_prefix = b.match[0];
-    const b_suffix = new Number(b.match[1]);
-
-    if (a.prefix === b.prefix) {
-        return a_suffix - b_suffix;
-    }
-    if (a_prefix < b_prefix) { return -1 };
-    if (a_prefix > b_prefix) { return 1 };
-    return 0;
-});
+env_keys.sort(new Intl.Collator('en-US', {
+  numeric: true,
+  sensitivity: 'variant',
+  caseFirst: 'upper'
+}).compare);
 
 const amend_rules = []
 
