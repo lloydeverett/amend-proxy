@@ -70,87 +70,87 @@ function timestamp() {
 
 function proxy_on_port(port, rules) {
     const server = http.createServer(async (req, res) => {
-      try {
-          let body = null;
-          req.on('data', (chunk) => {
-              if (body === null) { body = ""; }
-              body += chunk;
-          });
+        let body = null;
+        req.on('data', (chunk) => {
+            if (body === null) { body = ""; }
+            body += chunk;
+        });
 
-          req.on('end', async() => {
-          });
-              let parsed_body;
-              if (body) {
-                  try {
-                      parsed_body = JSON.parse(body);
-                  } catch (err) {
-                     if (err instanceof SyntaxError) {
-                         console.warn(`${timestamp()} request body is not valid JSON; `+
-                                      `rules eval will proceed with $ = _ = undefined and the body will be proxied verbatim unless _ is assigned explicitly in a rule`);
-                     } else {
-                         throw err;
-                     }
-                  }
-              }
+        req.on('end', async() => {
+            try {
+                let parsed_body;
+                if (body) {
+                    try {
+                        parsed_body = JSON.parse(body);
+                    } catch (err) {
+                        if (err instanceof SyntaxError) {
+                            console.warn(`${timestamp()} request body is not valid JSON; `+
+                                `rules eval will proceed with $ = _ = undefined and the body will be proxied verbatim unless _ is assigned explicitly in a rule`);
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
 
-              const $ = parsed_body;
-              const $url = req.url;
-              const $method = req.method;
-              const $headers = req.headers;
+                const $ = parsed_body;
+                const $url = req.url;
+                const $method = req.method;
+                const $headers = req.headers;
 
-              let _ = body && JSON.parse(JSON.stringify(parsed_body));
-              let _method = JSON.parse(JSON.stringify(req.method));
-              let _headers = JSON.parse(JSON.stringify(req.headers));
-              let _url;
-              let found_rule = false;
+                let _ = parsed_body && JSON.parse(JSON.stringify(parsed_body));
+                let _method = JSON.parse(JSON.stringify(req.method));
+                let _headers = JSON.parse(JSON.stringify(req.headers));
+                let _url;
+                let found_rule = false;
 
-              for (const rule of rules) {
-                  if (rule.path_regex.test(req.url)) {
-                      found_rule = true;
-                      _url = rule.out_host + req.url;
-                      console.log(`${timestamp()} apply ${rule.name} for inbound ${$method} ${$url}`);
-                      try {
-                          eval(rule.expression);
-                      } catch (err) {
-                          console.warn(`${timestamp()} error thrown during ${rule.name} eval; ignoring error\n`, err);
-                      }
-                  }
-              }
+                for (const rule of rules) {
+                    if (rule.path_regex.test(req.url)) {
+                        found_rule = true;
+                        _url = rule.out_host + req.url;
+                        console.log(`${timestamp()} apply ${rule.name} for inbound ${$method} ${$url}`);
+                        try {
+                            eval(rule.expression);
+                        } catch (err) {
+                            console.warn(`${timestamp()} error thrown during ${rule.name} eval; ignoring error\n`, err);
+                        }
+                    }
+                }
 
-              if (!found_rule) {
-                  throw "No rule found for incoming raffic; cannot route";
-              }
+                if (!found_rule) {
+                    throw "No rule found for incoming raffic; cannot route";
+                }
 
-              console.log(`${timestamp()} ${$method} ${$url} -> ${_method} ${_url}`);
+                console.log(`${timestamp()} ${$method} ${$url} -> ${_method} ${_url}`);
 
-              const output_req_body = _ ? JSON.stringify(_) : body
+                const output_req_body = _ ? JSON.stringify(_) : body
 
-              if (req.headers['content-length'] !== undefined) {
-                  _headers['content-length'] = Buffer.byteLength(output_req_body);
-              }
+                if (req.headers['content-length'] !== undefined) {
+                    _headers['content-length'] = Buffer.byteLength(output_req_body);
+                }
 
-              let response;
-              try {
-                  response = await fetch(_url, {
-                      method:   _method,
-                      headers:  _headers,
-                      body:     output_req_body
-                  });
-              } catch (err) {
-                  console.error(`${timestamp()} failed to obtain response from upstream server; returning HTTP 502\n`, err);
-                  res.writeHead(502, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ error: "Failed to fetch result from upstream server (see amend stderr for details)." }));
-                  return;
-              }
+                let response;
+                try {
+                    response = await fetch(_url, {
+                        method:   _method,
+                        headers:  _headers,
+                        body:     output_req_body
+                    });
+                } catch (err) {
+                    console.error(`${timestamp()} failed to obtain response from upstream server; returning HTTP 502\n`, err);
+                    res.writeHead(502, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: "Failed to fetch result from upstream server (see amend stderr for details)." }));
+                    return;
+                }
 
-              const responseBuffer = Buffer.from(await response.arrayBuffer());
-              res.writeHead(response.status, Object.fromEntries(response.headers));
-              res.end(responseBuffer);
-          } catch (err) {
-              console.error(`${timestamp()} amend: responding with HTTP 500 to ${req.method} ${req.url} due to error\n"`, err);
-              res.writeHead(500, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ error: "Error during preprocessing (see amend stderr for details)." }));
-          }
+                const responseBuffer = Buffer.from(await response.arrayBuffer());
+                res.writeHead(response.status, Object.fromEntries(response.headers));
+                res.end(responseBuffer);
+            } catch (err) {
+                console.error(`${timestamp()} amend: responding with HTTP 500 to ${req.method} ${req.url} due to error\n"`, err);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: "Error during preprocessing (see amend stderr for details)." }));
+            }
+        });
     });
 
     server.listen(port, () => {
