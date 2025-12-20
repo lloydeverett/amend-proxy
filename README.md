@@ -33,11 +33,8 @@ curl -X POST http://localhost:8080/foo/bar \
 
 ### Evaluation context for `JS_EXPRESSION`
 
-- `$` represents the parsed JSON body of the request, if available. If the
-  body is not valid JSON or is absent, `$` is undefined.
-- `_` a modifiable variable that initially holds a deep copy of `$`, if available.
-  Modifications to `_` will be used as the request body when forwarding the
-  request to the upstream server.
+- `$` represents the parsed JSON body of the request, if available (if the body is not valid JSON or is absent, `$` is `undefined`).
+- `_` represents the modifiable output body to be sent to the destination server, initialised to a deep copy of `$` when available.
 
 There are also analogues for the header map (`_headers` and `$headers`), HTTP method (`_method` and `$method`) and URL (`_url` and `$url`). Refer to the source for details.
 
