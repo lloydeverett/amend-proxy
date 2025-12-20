@@ -16,5 +16,5 @@ RUN npm ci
 
 COPY . .
 
-CMD ["node", "expressjs-amend.js"]
+CMD ["node", "amend.js"]
 
