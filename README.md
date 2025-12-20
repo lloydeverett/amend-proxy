@@ -1,8 +1,8 @@
 
 # Amend Proxy Server
 
-A little proxy server to patch HTTP requests before they reach their destination. Expected use case is for JSON payload modifications, though can be used for other purposes.
-
+A little proxy server to patch HTTP requests before they reach their destination.
+Expected use case is for JSON payload modifications, though can be used for other purposes.
 Environment variables are used to define routing and transformation rules.
 
 ## Rule syntax
