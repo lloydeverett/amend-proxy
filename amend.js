@@ -100,6 +100,21 @@ function proxy_on_port(port, rules) {
                 let _ = parsed_body && JSON.parse(JSON.stringify(parsed_body));
                 let _method = JSON.parse(JSON.stringify(req.method));
                 let _headers = JSON.parse(JSON.stringify(req.headers));
+                const headers_to_strip = [
+                    'host',
+                    'connection',
+                    'transfer-encoding',
+                    'user-agent',
+                    'accept-encoding',
+                    'proxy-connection',
+                    'http2-settings',
+                    'upgrade',
+                    'te',
+                    'trailer'
+                ];
+                for (const header_to_strip of headers_to_strip) {
+                    delete _headers[header_to_strip];
+                }
                 let _url;
                 let found_rule = false;
 
